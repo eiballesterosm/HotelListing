@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using HotelListing.Data;
 using HotelListing.IRepository;
 using HotelListing.Models;
 using Microsoft.AspNetCore.Http;
@@ -43,7 +44,7 @@ namespace HotelListing.Controllers
             }
         }
 
-        [HttpGet("{id:int}")]
+        [HttpGet("{id:int}", Name = "GetHotel")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> GetHotelById(int id)
@@ -57,6 +58,32 @@ namespace HotelListing.Controllers
             catch (Exception excError)
             {
                 logger.LogError(excError, string.Concat("Error: ", nameof(GetHotelById)));
+                return StatusCode(500, "Internal Server Error. Please try again");
+            }
+        }
+
+        [HttpPost]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status201Created)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        public async Task<IActionResult> CreateHotel([FromBody] CreateHotelDTO hotelDTO)
+        {
+            if (!ModelState.IsValid)
+            {
+                logger.LogError(string.Concat(nameof(CreateHotel), ": Invalid model"));
+                return BadRequest(ModelState);
+            }
+
+            try
+            {
+                var hotel = mapper.Map<Hotel>(hotelDTO);
+                await unitOfWork.Hotels.Insert(hotel);
+                await unitOfWork.Save();
+                return CreatedAtRoute("GetHotel", new { id = hotel.Id }, hotel);
+            }
+            catch (Exception excError)
+            {
+                logger.LogError(excError, string.Concat("Error: ", nameof(CreateHotel)));
                 return StatusCode(500, "Internal Server Error. Please try again");
             }
         }
