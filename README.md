@@ -1,5 +1,5 @@
 # HotelListing
-ASP.NET 5 Web API Development Guide
+ASP.NET Core 5 Web API Development Guide
 
 
 EntityFramework CodeFirst
