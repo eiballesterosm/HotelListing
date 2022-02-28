@@ -70,8 +70,8 @@ namespace HotelListing.Controllers
         {
             if (!ModelState.IsValid)
             {
-                logger.LogError(string.Concat(nameof(GetCountryById), ": Invalid model"));
-                return StatusCode(500, "Internal Server Error. Please try again");
+                logger.LogError(string.Concat(nameof(CreateCountry), ": Invalid model"));
+                return BadRequest(ModelState);
             }
 
             try
@@ -88,5 +88,35 @@ namespace HotelListing.Controllers
             }
         }
 
+        [HttpPut]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public async Task<IActionResult> UpdateCountry([FromBody] UpdateCountryDTO countryDTO)
+        {
+            if (!ModelState.IsValid || countryDTO.Id < 1)
+            {
+                logger.LogError(string.Concat(nameof(UpdateCountry), ": Invalid model"));
+                return BadRequest(ModelState);
+            }
+
+            try
+            {
+                var country = await unitOfWork.Countries.Get(expression: c => c.Id == countryDTO.Id);
+                if (country == null)
+                {
+                    logger.LogError(string.Concat(nameof(UpdateCountry), ": Invalid model"));
+                    return BadRequest(ModelState);
+                }
+                mapper.Map(countryDTO, country);
+                unitOfWork.Countries.Update(country);
+                await unitOfWork.Save();
+                return CreatedAtRoute("GetCountryById", new { id = country.Id }, country);
+            }
+            catch (Exception excError)
+            {
+                logger.LogError(excError, string.Concat("Error: ", nameof(GetCountryById)));
+                return StatusCode(500, "Internal Server Error. Please try again");
+            }
+        }
     }
 }

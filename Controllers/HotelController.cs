@@ -87,5 +87,36 @@ namespace HotelListing.Controllers
                 return StatusCode(500, "Internal Server Error. Please try again");
             }
         }
+
+        [HttpPut]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        public async Task<IActionResult> UpdateHotel([FromBody] UpdateHotelDTO hotelDTO)
+        {
+            if (!ModelState.IsValid || hotelDTO.Id < 1)
+            {
+                logger.LogError(string.Concat(nameof(UpdateHotel), ": Invalid model"));
+                return BadRequest(ModelState);
+            }
+
+            try
+            {
+                var hotel = await unitOfWork.Hotels.Get(expression: h => h.Id == hotelDTO.Id);
+                if (hotel == null)
+                {
+                    logger.LogError(string.Concat(nameof(UpdateHotel), ": Invalid model"));
+                    return BadRequest(ModelState);
+                }
+                mapper.Map(hotelDTO, hotel);
+                unitOfWork.Hotels.Update(hotel);
+                await unitOfWork.Save();
+                return CreatedAtRoute("GetHotel", new { id = hotel.Id }, hotel);
+            }
+            catch (Exception excError)
+            {
+                logger.LogError(excError, string.Concat("Error: ", nameof(UpdateHotel)));
+                return StatusCode(500, "Internal Server Error. Please try again");
+            }
+        }
     }
 }
